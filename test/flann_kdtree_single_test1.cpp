@@ -24,24 +24,34 @@ float B1[] = {-0.102066,0.169254,0.020833,-0.061236,-0.110985,0.078217,-0.129061
 float B2[] = {0.127552 ,-0.007579 ,-0.030017 ,-0.015554 ,-0.066014 ,0.093426 ,-0.058764 ,-0.040634 ,0.071318 ,0.038123 ,-0.059225 ,-0.030731 ,0.103037 ,-0.092335 ,-0.013617 ,0.084229 ,-0.019362 ,0.028973 ,-0.034991 ,0.117556 ,-0.048185 ,0.082838 ,0.130261 ,0.010053 ,-0.132903 ,0.108435 ,-0.131229 ,0.137934 ,0.028315 ,0.118628 ,-0.049962 ,-0.041894 ,-0.127881 ,0.025936 ,-0.065017 ,0.123208 ,-0.027261 ,-0.060936 ,0.116945 ,0.024365 ,0.007316 ,0.025409 ,-0.036919 ,-0.022691 ,0.003667 ,-0.023876 ,0.060880 ,0.045608 ,0.014247 ,0.044122 ,-0.106864 ,-0.011924 ,-0.071120 ,-0.007241 ,0.049840 ,0.039486 ,-0.015977 ,0.044884 ,0.023218 ,0.107504 ,0.011520 ,0.086138 ,0.096116 ,0.130035 ,-0.011049 ,-0.001025 ,0.158453 ,-0.119221 ,-0.079603 ,0.072023 ,-0.130627 ,-0.023754 ,0.148494 ,0.048768 ,-0.070613 ,-0.066503 ,0.095429 ,-0.065817 ,-0.032433 ,0.019278 ,-0.111886 ,-0.027675 ,-0.055294 ,0.038113 ,-0.079471 ,0.157362 ,0.094009 ,0.050940 ,-0.081455 ,0.160541 ,-0.039703 ,0.096717 ,0.074026 ,0.027261 ,0.057147 ,0.003047 ,-0.070462 ,-0.072540 ,-0.097442 ,0.067622 ,0.012855 ,0.033233 ,0.034295 ,0.052435 ,-0.005332 ,-0.041508 ,-0.017698 ,0.012084 ,-0.053488 ,0.088715 ,-0.093191 ,0.006037 ,-0.090248 ,-0.032866 ,0.054213 ,0.045373 ,0.017246 ,0.039825 ,0.010297 ,-0.015196 ,-0.082405 ,-0.091677 ,-0.070086 ,-0.010918 ,0.169888 ,0.085113 ,0.122578 ,0.063014 ,0.019701 ,-0.045853 ,-0.130214 ,0.031108 ,0.082781 ,0.074177 ,-0.027948 ,0.115421 ,0.035650 ,0.097630 ,-0.043784 ,0.043464 ,0.068130 ,-0.053347 ,-0.031098 ,-0.075719 ,-0.038104 ,-0.123283 ,-0.021694 ,0.127402 ,-0.085226 ,-0.054730 ,-0.075014 ,0.010607 ,-0.067801 ,0.069672 ,-0.025983 ,-0.092269 ,-0.029039 ,-0.136768 ,0.085104 ,0.065328 ,-0.049539 ,0.015996 ,-0.037295 ,0.045862 ,0.026133 ,0.069879 ,-0.043267 ,0.040060 ,-0.003037 ,-0.047216 ,-0.037483 ,-0.011943 ,-0.106074 ,-0.067434 ,-0.067538 ,0.068976 ,-0.035048 ,-0.019898 ,-0.053573 ,0.068939 ,0.043408 ,0.074449 ,-0.067660 ,0.041292 ,-0.041489 ,0.194046 ,0.052520 ,0.014218 ,0.012874 ,-0.031117 ,0.076499 ,0.008416};
 
 
-int mp_getmemused()
+size_t mp_getmemused()
 {
     struct rusage rusage;
     getrusage(RUSAGE_SELF, &rusage);
     return (size_t)(rusage.ru_maxrss);
 }
 
+size_t getms() 
+{
+    struct timeval time_v = { 0 };
+    gettimeofday(&time_v, NULL);
+
+    return (size_t)time_v.tv_sec * 1000 + time_v.tv_usec / 1000;
+}
+
 
 int main(int argc, char** argv)
 {
-    int mem_begin,mem_end;
+    unsigned long long mem_begin,mem_end;
 
     int kDim = 192;
     Index<L2<float>> *index;
     SearchParams *search_par;
-    index = new Index<L2<float>>(flann::KDTreeIndexParams(4));
-    //search_par = new flann::SearchParams(FLANN_CHECKS_UNLIMITED);
+    index = new Index<L2<float>>(flann::KDTreeIndexParams());
+    //index = new Index<L2<float>>(flann::KMeansIndexParams());
+    //search_par = new flann::SearchParams(FLANN_CHECKS_AUTOTUNED);
     search_par = new flann::SearchParams(FLANN_CHECKS_UNLIMITED);
+    //search_par = new flann::SearchParams();
 
     float* p = new float[kDim];
 
@@ -58,33 +68,74 @@ int main(int argc, char** argv)
 
     float threshold = 0.5f;
 
+    size_t i_index = 0;
     
 {
     srand((int)time(0)); 
+    if(1)
+    {
+        for(int i = 1; i <1000;i++)
+        {
+            Matrix<float> newPoint(A1, 1, kDim);
+            index->addPoints(newPoint);
+            i_index++;
+            index->removePoint(i);
+        }
+    }
     {
         Matrix<float> newPoint(A1, 1, kDim);
-        index->addPoints(newPoint);
+        index->addPoints(newPoint); i_index++;
+        printf("size %zu %zu\n", index->size(), i_index);
         Matrix<float> newPoint1(A2, 1, kDim);
-        index->addPoints(newPoint1);
+        index->addPoints(newPoint1);i_index++;
+        printf("size %zu\n", index->size());
         Matrix<float> newPoint2(A3, 1, kDim);
-        index->addPoints(newPoint2);
+        index->addPoints(newPoint2);i_index++;
+        printf("size %zu\n", index->size());
         Matrix<float> newPoint3(A4, 1, kDim);
-        index->addPoints(newPoint3);
+        index->addPoints(newPoint3);i_index++;
+        printf("size %zu\n", index->size());
         Matrix<float> newPoint4(A5, 1, kDim);
-        index->addPoints(newPoint4);
+        index->addPoints(newPoint4);i_index++;
+        printf("size %zu\n", index->size());
         Matrix<float> newPoint5(A6, 1, kDim);
-        index->addPoints(newPoint5);
+        index->addPoints(newPoint5);i_index++;
+        printf("size %zu\n", index->size());
         Matrix<float> newPoint6(A7, 1, kDim);
-        index->addPoints(newPoint6);
+        index->addPoints(newPoint6);i_index++;
+        printf("size %zu\n", index->size());
         Matrix<float> newPoint7(A8, 1, kDim);
-        index->addPoints(newPoint7);
+        index->addPoints(newPoint7);i_index++;
+        printf("size %zu index %zu\n", index->size(), i_index);
+        index->removePoint(1);
+        index->removePoint(1);
+        printf("size %zu\n", index->size());
+//        index->removePoint(1000);
+//        index->removePoint(i_index);
+        printf("size %zu\n", index->size());
+        Matrix<float> newPoint8(A1, 1, kDim);
+        index->addPoints(newPoint8);i_index++;
+        printf("size %zu %zu %p\n", index->size(), i_index, A1);
+        float *p = index->getPoint(i_index);
+        index->removePoint(9);
+//        index->removePoint(i_index);
+        Matrix<float> newPoint9(A1, 1, kDim);
+        index->addPoints(newPoint9);i_index++;
+        float *p1 = index->getPoint(i_index);
+        if(p && p1)
+        {
+            //A1[0] = 124.0f;
+            
+            printf("size %zu %p %f\n", index->size(), p, *p);
+            printf("size %zu %p %f\n", index->size(), p1, *p1);
+        }
     }
     mem_begin = mp_getmemused();
     
-    for(int i = 0; i < 10000000; i++)//16581
+    for(int i = 0; i < 500000; i++)//16581
     {
         float total = 0;
-        float magicVal[kDim];
+        float *magicVal = new float[kDim];
         for (int i = 0; i < kDim; ++i)
         {
             magicVal[i] = random(1000) /(float)1000;
@@ -96,10 +147,10 @@ int main(int argc, char** argv)
             magicVal[i] = magicVal[i]/f32Sqrt;
         }
         Matrix<float> newPoint(magicVal, 1, kDim);
-        index->addPoints(newPoint);
+        index->addPoints(newPoint);i_index++;
     }
     mem_end = mp_getmemused();
-    printf("mem %d\n", mem_end - mem_begin);
+    printf("mem %llu\n", mem_end - mem_begin);
 
     std::vector<std::vector<int>> indices;
     std::vector<std::vector<float>> dists;
@@ -110,11 +161,14 @@ int main(int argc, char** argv)
 
     if(0)
     {
+        size_t begin=getms();
         index->knnSearch(*queryPt, indices, dists, 100, *search_par);
+        size_t end=getms();
+        printf("search %zu ms\n", end-begin);
     }
     if(1)
     {
-        float find_threshold = 0.00001f;
+        float find_threshold = 0.70001f;
         float tmp_find_threshold = FLT_MAX;
         if (find_threshold != 0)
         {
@@ -124,14 +178,17 @@ int main(int argc, char** argv)
         {
             search_par->checks = -1;
         }
+        size_t begin=getms();
         index->radiusSearch(*(queryPt), indices, dists, tmp_find_threshold, *search_par);
-        printf("tmp_find_threshold %f\n", tmp_find_threshold);
+        size_t end=getms();
+        printf("tmp_find_threshold %f \nsearch %zu ms\n", tmp_find_threshold, end-begin);
     }
     
-    printf("size: %u, veclen: %u, usedMemory: %u\n", 
+    printf("size: %u, veclen: %u, usedMemory: %u, mem:%u\n", 
         (unsigned int)index->size(), 
         (unsigned int)index->veclen(),
-        (unsigned int)index->usedMemory());
+        (unsigned int)index->usedMemory(),
+        (unsigned int)index->size() * 4 * kDim / 1024);
         
     printf("indices.size %d\n", (int)indices.size());
     if (indices.size() > 0)
@@ -140,7 +197,7 @@ int main(int argc, char** argv)
         for(int i = 0; i < indices[0].size(); i++)
         {
             float *find_id_addr = index->getPoint(indices[0][i]);
-            printf("indices %d  %f    euc: %f   cosin: %f   score: %f\n", (int)indices[0][i], *find_id_addr, dists[0][i], 1.0-dists[0][i]/(float)4,
+            printf("indices %d  %f    euc: %f   cosin: %f   score: %f\n", (int)indices[0][i], *find_id_addr, dists[0][i], 1.0-dists[0][i]/(float)4,\
                 1 / (float)(1 + std::exp(alpha*(dists[0][i]) + beta)));
         }
     }
