@@ -1,7 +1,7 @@
 #include <time.h>
-  #include <sys/types.h>
-   #include <sys/time.h>
-   #include <sys/resource.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <flann/flann.h>
 #include <iostream>
 #include <cstdlib>
@@ -47,7 +47,7 @@ int main(int argc, char** argv)
     int kDim = 192;
     Index<L2<float>> *index;
     SearchParams *search_par;
-    index = new Index<L2<float>>(flann::KDTreeIndexParams());
+    index = new Index<L2<float>>(flann::KDTreeIndexParams(1));
     //index = new Index<L2<float>>(flann::KMeansIndexParams());
     //search_par = new flann::SearchParams(FLANN_CHECKS_AUTOTUNED);
     search_par = new flann::SearchParams(FLANN_CHECKS_UNLIMITED);
@@ -62,30 +62,51 @@ int main(int argc, char** argv)
         magicVal[i] = std::numeric_limits<float>::max();
     }
     Matrix<float> zeroSet(magicVal, 1, kDim);
-
+    size_t i_index = 0;
     index->buildIndex(zeroSet);
+    printf("size %zu %zu\n", index->size(), i_index);
     index->removePoint(0);
 
-    float threshold = 0.5f;
-
-    size_t i_index = 0;
+    size_t m1 = mp_getmemused();
+    std::vector<int> aa;
+    aa.reserve(10000000);
+    for (int i = 0; i < 10000000; ++i)
+    {
+        aa.push_back(i);
+    }
     
+    size_t m2 = mp_getmemused();
+    size_t begin=getms();
+    for (int i = 0; i < aa.size(); ++i)
+    {
+        if(aa[i] == 0)
+            aa[i] = 1;
+    }
+    size_t end =getms();
+
+    printf("size %zu %zu    diff %zu  mem %zu\n", index->size(), i_index, end-begin, m2-m1);
+
+    return 0;
+    float threshold = 0.5f;
+    
+     
 {
     srand((int)time(0)); 
     if(1)
     {
-        for(int i = 1; i <1000;i++)
+        for(int i = 1; i <100;i++)
         {
             Matrix<float> newPoint(A1, 1, kDim);
-            index->addPoints(newPoint);
-            i_index++;
-            index->removePoint(i);
+            index->addPoints(newPoint);i_index++;
+            index->removePoint(i_index);
+            float *p = index->getPoint(i_index);
+            printf("AAAAA size %zu %zu %p\n", index->size(), i_index, p);
         }
     }
     {
         Matrix<float> newPoint(A1, 1, kDim);
         index->addPoints(newPoint); i_index++;
-        printf("size %zu %zu\n", index->size(), i_index);
+        printf("A1 size %zu %zu\n", index->size(), i_index);
         Matrix<float> newPoint1(A2, 1, kDim);
         index->addPoints(newPoint1);i_index++;
         printf("size %zu\n", index->size());
@@ -115,12 +136,17 @@ int main(int argc, char** argv)
         printf("size %zu\n", index->size());
         Matrix<float> newPoint8(A1, 1, kDim);
         index->addPoints(newPoint8);i_index++;
-        printf("size %zu %zu %p\n", index->size(), i_index, A1);
+        printf("A1 size %zu %zu %p\n", index->size(), i_index, A1);
         float *p = index->getPoint(i_index);
         index->removePoint(9);
 //        index->removePoint(i_index);
         Matrix<float> newPoint9(A1, 1, kDim);
         index->addPoints(newPoint9);i_index++;
+        printf("A1 size %zu %zu %p\n", index->size(), i_index, A1);
+
+        index->removePoint(1000);
+        float *pp = index->getPoint(1000);
+        printf("A1 size %zu %zu %p %p\n", index->size(), i_index, A1, pp);
         float *p1 = index->getPoint(i_index);
         if(p && p1)
         {
